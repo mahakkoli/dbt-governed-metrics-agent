@@ -1,4 +1,15 @@
-# Eval set for the cloud-usage-metrics agent.
+# Eval tests
+# Ground truth computed directly from mart_account_monthly (generator seed 42),
+# independently of the agent. Data covers 2025-04-01 to 2026-09-01.
+#
+# Run 1 (2026-11-13): 16 pass, 2 partial, 1 fail.
+#   As first graded it was 15 pass, 1 partial, 3 fail, but two "fails" (#14, #1) turned
+#   out to be valid alternative readings that the expected answers didn't cover.
+#   The ground truth was widened to accept them.
+#   Real issues found: unstated periods (#16), growth from a tiny base and silently
+#   excluded new accounts (#1), inference presented as fact (#9), raw unreadable numbers.
+#   Fixes: display values on every row, answering rules in the server instructions,
+#   caveats in the plan and storage descriptions.
 
 
 evals:
@@ -11,7 +22,7 @@ evals:
     expected_call: time_grain month, start/end 2026-09-01
     expected_answer: About $245,328
     pass_if: Number within 1%
-    result:
+    result: pass
     notes:
 
   - id: 13
@@ -21,8 +32,8 @@ evals:
     expected_call: time_grain quarter, start 2026-07-01
     expected_answer: "188"
     pass_if: Exactly 188 (summing the three months would wrongly give about 530)
-    result:
-    notes:
+    result: pass
+    notes: 
 
   - id: 19
     question: How many active namespaces were there in September 2026?
@@ -31,7 +42,7 @@ evals:
     expected_call: start/end 2026-09-01
     expected_answer: "511"
     pass_if: Exactly 511
-    result:
+    result: pass
     notes:
 
   - id: 16
@@ -41,8 +52,8 @@ evals:
     expected_call: Latest month (2026-09-01) or states the period it used
     expected_answer: About 1.5 GB per account in September 2026
     pass_if: Uses avg_storage_gb, states the period, about 1.5 GB for Sep 2026
-    result:
-    notes:
+    result: partial
+    notes: it averages each account's monthly average storage across the full date range instead of using a specific date range. It answers 1.09GB
 
   # ---------- Breakdowns ----------
   - id: 6
@@ -52,7 +63,7 @@ evals:
     expected_call: group_by plan, time_grain null
     expected_answer: Enterprise, about $893K (Business about $697K, Essentials about $603K)
     pass_if: Enterprise, with totals roughly right
-    result:
+    result: pass
     notes:
 
   - id: 7
@@ -62,7 +73,7 @@ evals:
     expected_call: group_by plan, time_grain null
     expected_answer: Enterprise, about 11.3 billion actions (Essentials about 9.7B, Business about 9.1B)
     pass_if: Maps "usage" to billable_actions and answers Enterprise
-    result:
+    result: pass
     notes:
 
   - id: 4
@@ -72,7 +83,7 @@ evals:
     expected_call: time_grain month, whole range
     expected_answer: April 2026, with 21 new accounts (next is January 2026 with 18)
     pass_if: April 2026, 21
-    result:
+    result: pass
     notes:
 
   - id: 3
@@ -82,8 +93,8 @@ evals:
     expected_call: group_by account_id, time_grain null
     expected_answer: A0195, about 3.0 billion actions (next A0098 about 1.7B)
     pass_if: A0195
-    result:
-    notes:
+    result: pass
+    notes: it answer with the two following highest as well
 
   - id: 5
     question: Which account ID has the highest revenue in 2026?
@@ -92,7 +103,7 @@ evals:
     expected_call: group_by account_id, time_grain year (or null), start 2026-01-01
     expected_answer: A0195, about $136,480 (next A0097 about $64,407)
     pass_if: A0195
-    result:
+    result: pass
     notes:
 
   - id: 15
@@ -102,8 +113,8 @@ evals:
     expected_call: group_by signup_month, time_grain null, then sums by year
     expected_answer: 2025 signups about $1.55M (104 accounts); 2026 signups about $647K (96 accounts)
     pass_if: Both totals within 1%
-    result:
-    notes:
+    result: pass
+    notes: it gives additional context of how 2025 cohort has more months than 2026 as of now
 
   # ---------- Trends and comparisons ----------
   - id: 2
@@ -113,7 +124,7 @@ evals:
     expected_call: time_grain quarter, start 2025-10-01, end 2026-03-01
     expected_answer: Up about $153K, from about $258,506 to $411,853 (about +59%)
     pass_if: Direction, amount and percentage roughly right
-    result:
+    result: pass
     notes:
 
   - id: 14
@@ -121,20 +132,26 @@ evals:
     category: trend
     expected_metric: revenue
     expected_call: group_by region, time_grain quarter, compares Q3 2025 to Q3 2026
-    expected_answer: eu-west, up about 477% (us-west is close behind at about 469%; us-east slowest at about 208%)
-    pass_if: eu-west, and states which periods it compared
-    result:
-    notes:
+    expected_answer: 
+      eu-west under any year-over-year reading. Q3 2025 to Q3 2026, up about 477%
+      (us-west close behind at about 469%). Sep 2025 to Sep 2026, up about 397%
+      (us-west about 336%). us-east is slowest either way.
+    pass_if: eu-west, the growth figure matches the periods it states
+    result: pass (regraded from fail)
 
   - id: 1
     question: What is our fastest growing account?
     category: trend (hard)
     expected_metric: revenue
     expected_call: group_by account_id, time_grain quarter, Q2 vs Q3 2026 (about 370 rows)
-    expected_answer: A0001, revenue up from about $8.7K to $16.9K, Q2 to Q3 2026 (+94%). It also has the biggest dollar increase.
-    pass_if: A0001 with a stated definition of growth. Watch for the 500-row cap if it pulls monthly data for every account.
-    result:
-    notes:
+    expected_answer: Depends on the definition, which the agent must state. Q2 to Q3 2026: A0001
+      (+94%, also the biggest dollar gain). Q3 2025 to Q3 2026, accounts present in
+      both periods A0009 by percentage (+1,280%, but from only $116) and A0052 by
+      dollars (+$19.6K).
+    pass_if: 
+      Numbers match the stated definition AND it flags growth from a tiny base and
+      any accounts excluded because they didn't exist in the earlier period.
+    result: partial (regraded from fail)
 
   # ---------- Ambiguous ----------
   - id: 8
@@ -144,8 +161,8 @@ evals:
     expected_call: group_by region, a specific month
     expected_answer: Asks which month, or picks one and says so. For September 2026, ap-south is lowest at about $31K.
     pass_if: States or asks which month; does not present one month as if it were all months
-    result:
-    notes:
+    result: pass
+    notes: correctly compared it to the next lowest region us-west
 
   - id: 10
     question: Which plan has the most actions on average?
@@ -154,7 +171,7 @@ evals:
     expected_call: Combines two metric queries, or explains the gap
     expected_answer: Enterprise, about 378M actions per account over the whole period (about 52M per account per month)
     pass_if: Enterprise, and states what "average" means
-    result:
+    result: pass
     notes:
 
   - id: 11
@@ -164,7 +181,7 @@ evals:
     expected_call: time_grain quarter
     expected_answer: Q3 2026 under either reading (about $3,811 per account, or about $239K per month)
     pass_if: Q3 2026, and states which average it used
-    result:
+    result: pass
     notes:
 
   - id: 18
@@ -174,8 +191,8 @@ evals:
     expected_call: Recent quarters
     expected_answer: Growing. Q3 2026 revenue about $716K, up about 20% from Q2 ($596K); active accounts 188, up from 171.
     pass_if: Picks sensible metrics, uses recent data, explains what it looked at
-    result:
-    notes:
+    result: pass
+  
 
   # ---------- Out of scope ----------
   - id: 9
@@ -185,8 +202,10 @@ evals:
     expected_call: Ideally explains there's no direct metric. It may infer changes from billed plan by account, but must say it's an inference.
     expected_answer: Ground truth from the raw data is 35 plan changes in 2026
     pass_if: Doesn't present a guess as fact. An honest refusal or a clearly caveated inference both pass.
-    result:
-    notes:
+    result: fail
+    notes: it confidently answers that 33 accounts were billed on more than one plan in 2026.
+      33 is correct for that method, but it misses changes at the Dec/Jan boundary
+      (truth is 35) and was never labelled as an inference.
 
   - id: 17
     question: What was revenue in 2024?
@@ -195,5 +214,5 @@ evals:
     expected_call: none needed, or a query that returns nothing
     expected_answer: Says the data starts in April 2025, so there's no 2024 revenue
     pass_if: No made-up number
-    result:
+    result: pass
     notes:

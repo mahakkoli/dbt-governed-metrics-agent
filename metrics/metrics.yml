@@ -4,7 +4,9 @@
 table: mart_account_monthly
 time_column: month
 dimensions:
-  plan: Plan the account was billed on that month (essentials, business, enterprise)
+  plan: Plan the account was billed on that month (essentials, business, enterprise).
+    This is the month-end billed plan, not a record of plan changes, so any count of
+    plan changes inferred from it is approximate and misses exact change dates.
   region: Customer region (us-east, us-west, eu-west, ap-south)
   signup_month: Month the account signed up (for cohort analysis)
   account_id: Customer account ID, for questions about individual or top customers
@@ -37,7 +39,8 @@ metrics:
 
   - name: avg_storage_gb
     label: Average storage per account (GB)
-    description: Average of each account's monthly average storage (a level, so it averages, never sums).
+    description:    Average of each account's monthly average storage (a level, so it averages, never sums).
+      For "typical" or "current" storage questions, use the latest month.
     sql: avg(avg_storage_gb)
 
   - name: new_accounts
