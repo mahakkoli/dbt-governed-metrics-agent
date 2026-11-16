@@ -153,7 +153,7 @@ def make_daily_usage(rng: np.random.Generator, namespaces: pd.DataFrame, life: d
             continue
         months_in = (days - pd.Timestamp(ns.created_date)).days / 30.0
         trend = (1 + info["growth"]) ** months_in
-        weekday = np.where(days.dayofweek < 5, 1.0, 0.45)
+        weekday = np.where(days.day_of_week < 5, 1.0, 0.45)
         noise = rng.lognormal(0, 0.25, len(days))
         actions = np.maximum(0, info["size"] * ns.share * trend * weekday * noise).round().astype(int)
         storage = np.round(0.5 + np.cumsum(actions) / 4e7 * ns.share, 2)
