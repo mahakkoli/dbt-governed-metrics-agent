@@ -2,17 +2,21 @@
 .venv/
 __pycache__/
 *.pyc
+.pytest_cache/
 
 # dbt
 target/
 logs/
 dbt_packages/
+.user.yml
 
-# Local database
+# Local data and state
 *.duckdb
 *.duckdb.wal
+temporal.db
+
+# Local config (contains machine-specific paths)
+.mcp.json
 
 # macOS
 .DS_Store
-
-.pytest_cache/
